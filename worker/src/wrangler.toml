@@ -1,0 +1,22 @@
+# This file documents the Worker configuration
+# Currently deployed via Dashboard, not CLI
+
+name = "feedback-intelligence"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# D1 Database
+# Note: Database ID configured in Dashboard → Settings → Variables
+[[d1_databases]]
+binding = "DB"
+database_name = "feedback-db"
+database_id = "your-database-id-here"  # Replace with actual ID
+
+# Workers AI
+[ai]
+binding = "AI"
+
+# To deploy with CLI (optional):
+# 1. Install: npm install -g wrangler
+# 2. Login: wrangler login
+# 3. Deploy: wrangler deploy

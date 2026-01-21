@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudflare Feedback Intelligence</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #151520;
+      --bg-hover: #1a1a28;
+      --border: #2a2a3a;
+      --text-primary: #f0f0f5;
+      --text-secondary: #a0a0b0;
+      --text-muted: #606070;
+      --accent-primary: #ff6b35;
+      --accent-secondary: #00d4ff;
+      --accent-tertiary: #00ff88;
+      --critical: #ff3366;
+      --high: #ff9933;
+      --medium: #ffcc33;
+      --low: #66ccff;
+      --positive: #00ff88;
+      --negative: #ff3366;
+      --neutral: #a0a0b0;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.3;
+      pointer-events: none;
+      animation: gridMove 20s linear infinite;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(40px, 40px); }
+    }
+
+    /* Floating orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      pointer-events: none;
+      animation: float 20s infinite;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--accent-primary);
+      top: -200px;
+      left: -200px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 500px;
+      height: 500px;
+      background: var(--accent-secondary);
+      bottom: -250px;
+      right: -250px;
+      animation-delay: 5s;
+    }
+
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      background: var(--accent-tertiary);
+      top: 50%;
+      left: 50%;
+      animation-delay: 10s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(100px, -50px); }
+      50% { transform: translate(50px, 100px); }
+      75% { transform: translate(-50px, 50px); }
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .nav {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .nav-btn {
+      padding: 0.75rem 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 107, 53, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .nav-btn:hover::before {
+      left: 100%;
+    }
+
+    .nav-btn:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+
+    .nav-btn.active {
+      background: var(--accent-primary);
+      color: var(--bg-dark);
+      border-color: var(--accent-primary);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover::after {
+      transform: scaleX(1);
+    }
+
+    .stat-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-4px);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-change {
+      font-size: 0.875rem;
+      color: var(--accent-tertiary);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 1200px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chart-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .chart-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .chart-btn {
+      padding: 0.5rem 1rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chart-btn:hover {
+      border-color: var(--accent-secondary);
+      color: var(--accent-secondary);
+    }
+
+    .theme-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+    }
+
+    .theme-item {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .theme-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .theme-item.critical::before { background: var(--critical); }
+    .theme-item.high::before { background: var(--high); }
+    .theme-item.medium::before { background: var(--medium); }
+    .theme-item.low::before { background: var(--low); }
+
+    .theme-item:hover {
+      border-color: var(--accent-primary);
+      transform: translateX(8px);
+    }
+
+    .theme-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 0.75rem;
+    }
+
+    .theme-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .theme-priority {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 2px;
+    }
+
+    .theme-priority.critical {
+      background: rgba(255, 51, 102, 0.2);
+      color: var(--critical);
+      border: 1px solid var(--critical);
+    }
+
+    .theme-priority.high {
+      background: rgba(255, 153, 51, 0.2);
+      color: var(--high);
+      border: 1px solid var(--high);
+    }
+
+    .theme-priority.medium {
+      background: rgba(255, 204, 51, 0.2);
+      color: var(--medium);
+      border: 1px solid var(--medium);
+    }
+
+    .theme-priority.low {
+      background: rgba(102, 204, 255, 0.2);
+      color: var(--low);
+      border: 1px solid var(--low);
+    }
+
+    .theme-description {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .theme-meta {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .theme-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sentiment-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .sentiment-indicator.positive { background: var(--positive); }
+    .sentiment-indicator.negative { background: var(--negative); }
+    .sentiment-indicator.neutral { background: var(--neutral); }
+
+    .feedback-table {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      padding: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+
+    tr:hover {
+      background: var(--bg-hover);
+    }
+
+    .source-badge {
+      padding: 0.25rem 0.75rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-family: 'Space Mono', monospace;
+      display: inline-block;
+    }
+
+    .filter-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .filter-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    select, input {
+      padding: 0.5rem 1rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+
+    .action-btn {
+      padding: 0.75rem 1.5rem;
+      background: var(--accent-primary);
+      border: none;
+      color: var(--bg-dark);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.5s, height 0.5s;
+    }
+
+    .action-btn:hover::after {
+      width: 300px;
+      height: 300px;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(255, 107, 53, 0.3);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      max-width: 800px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 2rem;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+      transform: rotate(90deg);
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // API Base URL - update this to your Worker URL
+    const API_BASE = 'https://feedback-intelligence.hu-victoriah.workers.dev';  // Empty string for same-origin requests
+
+    function App() {
+      const [view, setView] = useState('dashboard');
+      const [stats, setStats] = useState(null);
+      const [themes, setThemes] = useState([]);
+      const [feedback, setFeedback] = useState([]);
+      const [selectedTheme, setSelectedTheme] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [filters, setFilters] = useState({
+        source: '',
+        sentiment: '',
+        userTier: ''
+      });
+
+      useEffect(() => {
+        loadData();
+      }, [view, filters]);
+
+      async function loadData() {
+        setLoading(true);
+        try {
+          if (view === 'dashboard') {
+            await Promise.all([
+              loadStats(),
+              loadThemes()
+            ]);
+          } else if (view === 'feedback') {
+            await loadFeedback();
+          }
+        } catch (error) {
+          console.error('Error loading data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function loadStats() {
+        const response = await fetch(`${API_BASE}/api/stats`);
+        const data = await response.json();
+        setStats(data);
+      }
+
+      async function loadThemes() {
+        const response = await fetch(`${API_BASE}/api/themes`);
+        const data = await response.json();
+        setThemes(data);
+      }
+
+      async function loadFeedback() {
+        const params = new URLSearchParams();
+        if (filters.source) params.append('source', filters.source);
+        if (filters.sentiment) params.append('sentiment', filters.sentiment);
+        if (filters.userTier) params.append('user_tier', filters.userTier);
+        
+        const response = await fetch(`${API_BASE}/api/feedback?${params}`);
+        const data = await response.json();
+        setFeedback(data);
+      }
+
+      async function initDatabase() {
+        setLoading(true);
+        await fetch(`${API_BASE}/api/init`, { method: 'POST' });
+        await loadData();
+      }
+
+      async function seedData() {
+        setLoading(true);
+        await fetch(`${API_BASE}/api/seed`, { method: 'POST' });
+        await loadData();
+      }
+
+      async function analyzeThemes() {
+        setLoading(true);
+        await fetch(`${API_BASE}/api/themes/analyze`, { method: 'POST' });
+        await loadThemes();
+        setLoading(false);
+      }
+
+      async function viewThemeDetail(themeId) {
+        const response = await fetch(`${API_BASE}/api/themes/${themeId}`);
+        const data = await response.json();
+        setSelectedTheme(data);
+      }
+
+      return (
+        <div className="container">
+          <header>
+            <h1>Feedback Intelligence</h1>
+            <p className="subtitle">CLOUDFLARE PRODUCT INSIGHTS · REAL-TIME THEME ANALYSIS</p>
+            
+            <div className="nav">
+              <button 
+                className={`nav-btn ${view === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setView('dashboard')}
+              >
+                Dashboard
+              </button>
+              <button 
+                className={`nav-btn ${view === 'feedback' ? 'active' : ''}`}
+                onClick={() => setView('feedback')}
+              >
+                Raw Feedback
+              </button>
+              <button className="nav-btn" onClick={initDatabase}>
+                Init Database
+              </button>
+              <button className="nav-btn" onClick={seedData}>
+                Seed Data
+              </button>
+              <button className="nav-btn" onClick={analyzeThemes}>
+                Analyze Themes
+              </button>
+            </div>
+          </header>
+
+          {loading && view === 'dashboard' ? (
+            <div className="loading pulse">Loading dashboard...</div>
+          ) : view === 'dashboard' ? (
+            <DashboardView 
+              stats={stats} 
+              themes={themes}
+              onViewTheme={viewThemeDetail}
+            />
+          ) : (
+            <FeedbackView 
+              feedback={feedback}
+              filters={filters}
+              onFilterChange={setFilters}
+            />
+          )}
+
+          {selectedTheme && (
+            <ThemeModal 
+              theme={selectedTheme}
+              onClose={() => setSelectedTheme(null)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    function DashboardView({ stats, themes, onViewTheme }) {
+      if (!stats) return <div className="loading pulse">Loading stats...</div>;
+
+      const topThemes = themes.slice(0, 10);
+
+      return (
+        <>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-label">Total Feedback</div>
+              <div className="stat-value">{stats.totalFeedback || 0}</div>
+              <div className="stat-change">Last 30 days</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Active Themes</div>
+              <div className="stat-value">{stats.totalThemes || 0}</div>
+              <div className="stat-change">Being tracked</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Critical Issues</div>
+              <div className="stat-value">
+                {themes.filter(t => t.priority_band === 'critical').length}
+              </div>
+              <div className="stat-change">Require attention</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Sentiment Score</div>
+              <div className="stat-value">
+                {stats.sentimentDistribution ? 
+                  Math.round((stats.sentimentDistribution.find(s => s.sentiment === 'positive')?.count || 0) / stats.totalFeedback * 100) : 0}%
+              </div>
+              <div className="stat-change">Positive feedback</div>
+            </div>
+          </div>
+
+          <div className="dashboard-grid">
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Sentiment Distribution</h2>
+              </div>
+              <SentimentChart data={stats.sentimentDistribution || []} />
+            </div>
+
+            <div className="chart-card">
+              <div className="chart-header">
+                <h2 className="chart-title">Top Sources</h2>
+              </div>
+              <SourceChart data={stats.topSources || []} />
+            </div>
+          </div>
+
+          <div className="theme-list">
+            <div className="chart-header">
+              <h2 className="chart-title">Top Priority Themes</h2>
+              <div className="chart-controls">
+                <button className="chart-btn">Export</button>
+              </div>
+            </div>
+
+            {topThemes.length === 0 ? (
+              <div className="empty-state">
+                <p>No themes yet. Click "Analyze Themes" to extract insights from feedback.</p>
+              </div>
+            ) : (
+              topThemes.map(theme => (
+                <div 
+                  key={theme.id}
+                  className={`theme-item ${theme.priority_band}`}
+                  onClick={() => onViewTheme(theme.id)}
+                >
+                  <div className="theme-header">
+                    <div>
+                      <div className="theme-name">{theme.name}</div>
+                      <div className="theme-description">{theme.description}</div>
+                    </div>
+                    <div className={`theme-priority ${theme.priority_band}`}>
+                      {theme.priority_band}
+                    </div>
+                  </div>
+                  <div className="theme-meta">
+                    <div className="theme-meta-item">
+                      <span>📊 {theme.feedback_count || theme.volume || 0} items</span>
+                    </div>
+                    <div className="theme-meta-item">
+                      <div className={`sentiment-indicator ${
+                        theme.avg_sentiment > 0.3 ? 'positive' : 
+                        theme.avg_sentiment < -0.3 ? 'negative' : 'neutral'
+                      }`}></div>
+                      <span>
+                        {theme.avg_sentiment > 0.3 ? 'Positive' : 
+                         theme.avg_sentiment < -0.3 ? 'Negative' : 'Neutral'}
+                      </span>
+                    </div>
+                    <div className="theme-meta-item">
+                      <span>Score: {theme.priority_score?.toFixed(1) || '0.0'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      );
+    }
+
+    function FeedbackView({ feedback, filters, onFilterChange }) {
+      return (
+        <>
+          <div className="filter-bar">
+            <div className="filter-group">
+              <label className="filter-label">Source</label>
+              <select 
+                value={filters.source}
+                onChange={(e) => onFilterChange({...filters, source: e.target.value})}
+              >
+                <option value="">All Sources</option>
+                <option value="support">Support</option>
+                <option value="github">GitHub</option>
+                <option value="discord">Discord</option>
+                <option value="community">Community</option>
+                <option value="internal">Internal</option>
+                <option value="email">Email</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">Sentiment</label>
+              <select 
+                value={filters.sentiment}
+                onChange={(e) => onFilterChange({...filters, sentiment: e.target.value})}
+              >
+                <option value="">All Sentiments</option>
+                <option value="positive">Positive</option>
+                <option value="neutral">Neutral</option>
+                <option value="negative">Negative</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">User Tier</label>
+              <select 
+                value={filters.userTier}
+                onChange={(e) => onFilterChange({...filters, userTier: e.target.value})}
+              >
+                <option value="">All Tiers</option>
+                <option value="enterprise">Enterprise</option>
+                <option value="paid">Paid</option>
+                <option value="free">Free</option>
+                <option value="internal">Internal</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="feedback-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Content</th>
+                  <th>Source</th>
+                  <th>Sentiment</th>
+                  <th>User Tier</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {feedback.map(item => (
+                  <tr key={item.id}>
+                    <td>{item.content}</td>
+                    <td><span className="source-badge">{item.source}</span></td>
+                    <td>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                        <div className={`sentiment-indicator ${item.sentiment}`}></div>
+                        {item.sentiment}
+                      </div>
+                    </td>
+                    <td>{item.user_tier}</td>
+                    <td>{new Date(item.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {feedback.length === 0 && (
+              <div className="empty-state">
+                <p>No feedback items found matching your filters.</p>
+              </div>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    function ThemeModal({ theme, onClose }) {
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2 className="chart-title">{theme.name}</h2>
+                <p style={{color: 'var(--text-secondary)', marginTop: '0.5rem'}}>
+                  {theme.description}
+                </p>
+              </div>
+              <button className="modal-close" onClick={onClose}>×</button>
+            </div>
+
+            <div style={{marginBottom: '1.5rem'}}>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-label">Priority</div>
+                  <div className={`theme-priority ${theme.priority_band}`} style={{fontSize: '1rem'}}>
+                    {theme.priority_band}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Feedback Volume</div>
+                  <div className="stat-value" style={{fontSize: '1.5rem'}}>
+                    {theme.feedback?.length || theme.volume || 0}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Priority Score</div>
+                  <div className="stat-value" style={{fontSize: '1.5rem'}}>
+                    {theme.priority_score?.toFixed(1) || '0.0'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 style={{marginBottom: '1rem', color: 'var(--text-primary)'}}>
+                Related Feedback
+              </h3>
+              {theme.feedback && theme.feedback.length > 0 ? (
+                <div style={{maxHeight: '400px', overflowY: 'auto'}}>
+                  {theme.feedback.map(item => (
+                    <div key={item.id} style={{
+                      background: 'var(--bg-dark)',
+                      border: '1px solid var(--border)',
+                      padding: '1rem',
+                      marginBottom: '0.75rem'
+                    }}>
+                      <p style={{color: 'var(--text-primary)', marginBottom: '0.5rem'}}>
+                        {item.content}
+                      </p>
+                      <div style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)'
+                      }}>
+                        <span className="source-badge">{item.source}</span>
+                        <span>{item.user_tier}</span>
+                        <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <p>No feedback items linked to this theme yet.</p>
+                </div>
+              )}
+            </div>
+
+            <div style={{marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)'}}>
+              <button className="action-btn" style={{width: '100%'}}>
+                Create Jira Issue
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function SentimentChart({ data }) {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current || !data.length) return;
+
+        if (chartRef.current) {
+          chartRef.current.destroy();
+        }
+
+        const ctx = canvasRef.current.getContext('2d');
+        chartRef.current = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: data.map(d => d.sentiment),
+            datasets: [{
+              data: data.map(d => d.count),
+              backgroundColor: [
+                'rgba(0, 255, 136, 0.8)',
+                'rgba(160, 160, 176, 0.8)',
+                'rgba(255, 51, 102, 0.8)'
+              ],
+              borderColor: [
+                'rgb(0, 255, 136)',
+                'rgb(160, 160, 176)',
+                'rgb(255, 51, 102)'
+              ],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                  color: '#f0f0f5',
+                  font: {
+                    family: 'JetBrains Mono'
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (chartRef.current) {
+            chartRef.current.destroy();
+          }
+        };
+      }, [data]);
+
+      return <canvas ref={canvasRef} style={{maxHeight: '300px'}}></canvas>;
+    }
+
+    function SourceChart({ data }) {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current || !data.length) return;
+
+        if (chartRef.current) {
+          chartRef.current.destroy();
+        }
+
+        const ctx = canvasRef.current.getContext('2d');
+        chartRef.current = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.map(d => d.source),
+            datasets: [{
+              label: 'Feedback Count',
+              data: data.map(d => d.count),
+              backgroundColor: 'rgba(255, 107, 53, 0.8)',
+              borderColor: 'rgb(255, 107, 53)',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            indexAxis: 'y',
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: '#a0a0b0',
+                  font: {
+                    family: 'JetBrains Mono'
+                  }
+                },
+                grid: {
+                  color: '#2a2a3a'
+                }
+              },
+              y: {
+                ticks: {
+                  color: '#a0a0b0',
+                  font: {
+                    family: 'JetBrains Mono'
+                  }
+                },
+                grid: {
+                  color: '#2a2a3a'
+                }
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (chartRef.current) {
+            chartRef.current.destroy();
+          }
+        };
+      }, [data]);
+
+      return <canvas ref={canvasRef} style={{maxHeight: '300px'}}></canvas>;
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
