@@ -10,7 +10,7 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "feedback-db"
-database_id = "your-database-id-here"  # Replace with actual ID
+database_id = "c915a513-6066-4906-88ff-8e062eb3fde8"  # Replace with actual ID
 
 # Workers AI
 [ai]
