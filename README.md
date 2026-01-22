@@ -1,9 +1,11 @@
 # cloudflare-feedback-intelligence
 While my repository may be lacking in the technical implementation of my prototype, I hope that the PRD I outlined below would provide more context and a better understanding of what I had in mind. This was based on competitive research of current market solutions, including Enterpret and Canny.
 
+
 # Feedback Dashboard Product Requirement Document
 **Context/Pain Points:** 
 Cloudflare receives high-volume, multi-source feedback across support tickets, GitHub issues, community forums, Discord, email, and social channels. This feedback is fragmented, noisy, and difficult for Product Managers to synthesize into actionable insights.
+
 **Goal:**
 Provide a single, theme-centric dashboard that aggregates feedback, surfaces the most important user pain points, tracks trends over time, and enables fast action (e.g., Jira issue creation).
 
@@ -13,6 +15,7 @@ PMs need a way to:
 - Identify the most impactful user pain points across feedback sources
 - Understand how feedback evolves over time 
 - Quickly translate feedback into prioritized product actions
+
 so that they can effectively prioritize and address user pain points
 
 ## Potential Solutions
@@ -28,7 +31,8 @@ so that they can effectively prioritize and address user pain points
 - Category (complaint, praise, improvement, help)
 - User attributes (tier, company size, internal/external)
 - Timestamp
-**Theme** - A cluster of feedback representing a single underlying user issue or desire.
+
+**Theme** - A cluster of feedback representing a single underlying user issue or desire.<br>
 Themes must be:
 - Mutually exclusive (no double counting)
 - Interpretable (human-readable, product-language following: User/Segment + Problem + Context)
@@ -104,11 +108,13 @@ Filters apply across the dashboard and raw feedback with groupings:
 - Content: Theme, category, sentiment
 - User: Tier, company size, internal/external
 - Timeframe: Presets (week, month, yr) + custom range
+
 Active filters are always visible.
 
 ### Jira Workflow (MVP) - P2
-**Entry point:** Theme detail view
+**Entry point:** Theme detail view <br>
 **Action:** “Create Jira Issue”
+
 Auto-filled fields:
 - Title: Theme name
 - Description: the theme summary supplemented with user quotes
@@ -117,6 +123,7 @@ Auto-filled fields:
   - Sentiment distribution
   - Affected product/feature area
   - User segments impacted
+
 As a PM I can manually confirm priority, and assigns owner
 
 ## Success Metrics
