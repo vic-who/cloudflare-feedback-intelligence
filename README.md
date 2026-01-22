@@ -42,35 +42,36 @@ Themes must be:
 
 ## Features
 ### Main Dashboard (Theme-Centric) - P0
-1. Theme Trend Line Graph
-Purpose: Show how feedback volume evolves over time.
-X-axis: Time (day / week)
-Y-axis: Feedback volume
-Lines: Top 5 themes (by priority score)
+1. Theme Trend Line Graph<br>
+Purpose: Show how feedback volume evolves over time.<br>
+X-axis: Time (day / week)<br>
+Y-axis: Feedback volume<br>
+Lines: Top 5 themes (by priority score)<br>
 Interaction:
 - Hover: volume + sentiment snapshot
 - Click: navigate to theme detail view
 
-2. Theme Ranking Bar Chart
-Purpose: Compare themes by impact at a glance.
-Horizontal bar chart ranked by priority score
+2. Theme Ranking Bar Chart<br>
+Purpose: Compare themes by impact at a glance.<br>
+Horizontal bar chart ranked by priority score (showing only the top 10 themes)<br>
 Each bar shows:
 - Theme name
 - Feedback count
 - Sentiment indicator (color-coded)
+
 Click → Theme detail view
 
-3. Sentiment Overview
-Purpose: Understand overall emotional direction of feedback.
-Distribution of Positive / Neutral / Negative
-Filter-aware (updates based on active filters)
-Supports release impact analysis
+3. Sentiment Overview<br>
+Purpose: Understand overall emotional direction of feedback.<br>
+Distribution of Positive / Neutral / Negative<br>
+Filter-aware (updates based on active filters)<br>
+Supports release impact analysis<br>
 
-4. “Top User Pain Points” Section
-Purpose: Plain-language summary for fast executive comprehension.
-AI-generated summaries of the top prioritized themes
-Answers:
-“What are users struggling with most right now?”
+4. “Top User Pain Points” Section<br>
+Purpose: Plain-language summary for fast executive comprehension.<br>
+AI-generated summaries of the top prioritized themes<br>
+Answers:“What are users struggling with most right now?”<br>
+
 Note: Pain points are not separate entities—they are a summarized view of top themes to avoid duplication.
 
 ### Theme Prioritization & Ranking - P1
@@ -118,7 +119,7 @@ Active filters are always visible.
 Auto-filled fields:
 - Title: Theme name
 - Description: the theme summary supplemented with user quotes
-- Metadata: F
+- Metadata: 
   - Feedback volume
   - Sentiment distribution
   - Affected product/feature area
