@@ -1,26 +1,27 @@
 # cloudflare-feedback-intelligence
-Due to the technical constraints of my capabilities, I will instead outline my PRD for my envisioned prototype below, based on competitive research of current market solutions, including Enterpret and Canny.
+While my repository may be lacking in the technical implementation of my prototype, I hope that the PRD I outlined below would provide more context and a better understanding of what I had in mind. This was based on competitive research of current market solutions, including Enterpret and Canny.
 
-# Feedback Dashboard Product Requirement Documentation
-**Context:** 
+# Feedback Dashboard Product Requirement Document
+**Context/Pain Points:** 
 Cloudflare receives high-volume, multi-source feedback across support tickets, GitHub issues, community forums, Discord, email, and social channels. This feedback is fragmented, noisy, and difficult for Product Managers to synthesize into actionable insights.
 **Goal:**
 Provide a single, theme-centric dashboard that aggregates feedback, surfaces the most important user pain points, tracks trends over time, and enables fast action (e.g., Jira issue creation).
 
 ## Problem Statement
-PMs struggle to:
+PMs need a way to:
+- Aggregate product feedback across multiple fragmented channels
 - Identify the most impactful user pain points across feedback sources
-- Understand how feedback evolves over time
-- Distinguish loud noise from meaningful signals (e.g., enterprise vs free users)
+- Understand how feedback evolves over time 
 - Quickly translate feedback into prioritized product actions
+so that they can effectively prioritize and address user pain points
 
-## Goals
+## Potential Solutions
 - Consolidate feedback into mutually exclusive, actionable themes
 - Rank and prioritize themes using clear, explainable metrics
 - Enable fast drill-down from themes → raw feedback
-- Support lightweight workflows from insight → action (Jira)
+- Support lightweight Jira workflows from insight → action (low priority)
 
-## Key Concepts & Features
+## Key Concepts
 **Feedback** - An individual piece of user input (ticket, GitHub issue, forum post, etc.), enriched with metadata:
 - Source
 - Sentiment
@@ -35,7 +36,8 @@ Themes must be:
 - Actionable (leads to a clear next step)
 - Example: “Enterprise users experience frequent WAF false positives”
 
-### Main Dashboard (Theme-Centric)
+## Features
+### Main Dashboard (Theme-Centric) - P0
 1. Theme Trend Line Graph
 Purpose: Show how feedback volume evolves over time.
 X-axis: Time (day / week)
@@ -67,7 +69,7 @@ Answers:
 “What are users struggling with most right now?”
 Note: Pain points are not separate entities—they are a summarized view of top themes to avoid duplication.
 
-### Theme Prioritization & Ranking
+### Theme Prioritization & Ranking - P1
 Themes are ranked using a composite prioritization score based on four factors:
 - Volume (Number of feedback items in the theme)
 - Sentiment Severity (weighing: negative > neutral > positive)
@@ -82,21 +84,21 @@ Themes are surfaced in priority bands:
 - Medium
 - Low
 
-### Theme Detail View
+### Theme Detail View - P0
 When a theme is selected, the detailed view shows:
 - Theme Summary, an AI-generated description of the underlying issue
 - Trend and sentiment snapshot
 - Subthemes, smaller, coherent breakdowns if the theme is large
 - Raw feedback items linking back to the original source
   - filterable and sortable by: source, user segment, timestamp
-#### Theme Management
+#### Theme Management - P2
 A settings section where PMs can:
   - Rename themes
   - Merge related themes
   - Split overly broad themes
   - create, link, and assign jira issues
 
-### Filters (Global)
+### Filters (Global) - P1
 Filters apply across the dashboard and raw feedback with groupings:
 - Source: Support, GitHub, Discord, Internal, etc.
 - Content: Theme, category, sentiment
@@ -104,7 +106,7 @@ Filters apply across the dashboard and raw feedback with groupings:
 - Timeframe: Presets (week, month, yr) + custom range
 Active filters are always visible.
 
-### Jira Workflow (MVP)
+### Jira Workflow (MVP) - P2
 **Entry point:** Theme detail view
 **Action:** “Create Jira Issue”
 Auto-filled fields:
